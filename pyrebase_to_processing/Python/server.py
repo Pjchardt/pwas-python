@@ -1,60 +1,75 @@
 # Echo server program
-import time
 import socket
 import select
-import threading
 
-class Server():
+from threading import Thread
+
+class ClientThread(Thread):
+    def __init__(self,ip,port, conn):
+        Thread.__init__(self)
+        self.ip = ip
+        self.port = port
+        self.conn = conn
+        self.run_thread = True
+        print ("[+] New thread started for " + str(ip) + ":" +str(port))
+
+
+    def run(self):
+        while self.run_thread:
+            print("running thread \n")
+            try:
+                data = self.conn.recv(2048)
+            except:
+                break
+            if not data: break
+            print ("received data:", data)
+            self.conn.send("<Server> Got your data. Send some more\n")
+
+    def close(self):
+        print("closing thread")
+        self.run_thread = False
+
+    def send_data(self, data):
+        self.conn.send(data.encode())
+
+class ServerThread(Thread):
+
     TCP_IP = '127.0.0.1'
     TCP_PORT = 5005
-    has_new_data = False
-    data = "should be an url"
-    do_running = True
-
-    def do_sockets(self):
-        while self.do_running:
-            unconnected_list = [self.s]
-            connected_list = []
-            while self.do_running:
-                unConnected, connected, errored = select.select(unconnected_list, connected_list, [])
-                for s in unConnected:
-                    if s is self.s:
-                        client_socket, address = self.s.accept()
-                        connected_list.append(client_socket)
-                        print ("Connection from", address)
-                    else:
-                        data = s.recv(1024)
-                        if data:
-                            print (data)
-                for s in connected_list:
-                    if self.has_new_data:
-                        print("sending data to processing")
-                        s.send(str.encode(self.data))
-                        self.has_new_data = False
+    BUFFER_SIZE = 1024  # Normally 1024
+    threads = []
 
     def __init__(self):
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.setblocking(0)
-        self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.s.bind((self.TCP_IP, self.TCP_PORT))
-        self.s.listen(1)
-        print('Starting server')
+        Thread.__init__(self)
+        self.run_server = True
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.server_socket.bind((self.TCP_IP, self.TCP_PORT))
+        self.server_socket.listen(10)
 
-        self.thread = threading.Thread(target = self.do_sockets)
-        #self.thread.deamon = True # use this if your application does not close.
-        self.thread.start()
-        print('waiting for sockets')
+    def run(self):
+        read_sockets, write_sockets, error_sockets = select.select([self.server_socket], [], [])
+        while self.run_server:
+            print ("Waiting for incoming connections...")
+            for sock in read_sockets:
+                (conn, (ip,port)) = self.server_socket.accept()
+                newthread = ClientThread(ip,port, conn)
+                newthread.start()
+                self.threads.append(newthread)
 
-    def new_data(self, data):
-        self.data = data
-        print("server got new data", self.data)
-        self.has_new_data = True
+    def send_data(self, data):
+        for t in self.threads:
+            t.send_data(data)
 
-    def stop_server(self):
-        self.do_running = False
-        #socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect( (self.TCP_IP, self.TCP_PORT))
+    def shutdown(self):
+        #shutdown clients
+        for t in self.threads:
+            t.close()
+        #shitdown server
+        self.run_server = False
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect( ('127.0.0.1', 5005))
         try:
-            self.s.shutdown(socket.SHUT_RDWR)
-            self.s.close()
+            self.server_socket.shutdown(socket.SHUT_RDWR)
+            self.server_socket.close()
         except:
             print("failed ot shutdown socket :(")

@@ -46,8 +46,8 @@ void draw() {
     } 
     else 
     {
-      float intensity = json.getFloat("strength_2");
-      shader_final.set("strength_2", intensity * 5);
+      float str_2 = json.getFloat("strength_2");
+      shader_final.set("speed_2", str_2 * 20);
       //pass value to shader
     }
   }
