@@ -54,7 +54,7 @@ class Main(object):
 
             process = subprocess.Popen('C:/Program Files/processing-3.3.5/processing-java --sketch="C:/Personal/Python/pwas-python/pyrebase_to_processing/Processing/client" --force --run')
         elif platform.system() == "Linux":
-            process = subprocess.Popen(['/home/pi/processing-3.4/processing-java', '--sketch=/home/pi/Documents/pwas-python/pyrebase_to_processing/Processing/pwas_for_pi', '--force', '--run'])
+            process = subprocess.Popen(['/usr/local/bin/processing-java', '--sketch=/home/pi/Documents/pwas-python/pyrebase_to_processing/Processing/pwas_for_pi', '--force', '--run'])
         else:
             print("Whatever platform you are on this prject doesn't support it :(")
         return process

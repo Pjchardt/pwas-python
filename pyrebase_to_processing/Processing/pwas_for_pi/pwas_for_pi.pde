@@ -13,8 +13,8 @@ PShader shader_buffer_b;
 PShader shader_final;
 
 void setup() { 
-  //fullScreen(P2D);
-  size(640, 480, P2D); 
+  fullScreen(P2D);
+  //size(640, 480, P2D); 
   
   myClient = new Client(this, "127.0.0.1", 5005);
   
